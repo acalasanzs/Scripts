@@ -3,7 +3,7 @@ from typing import Callable, List
 # from packages.AppSettings.utils import staticinstance
 
 class Attribute:
-    def __init__ (self, attr, typ : type | None, validate:  Callable[[object], bool] | None, default: bool = False):
+    def __init__ (self, attr: str, typ : type | None, validate:  Callable[[object], bool] | None, default: bool = False):
         self.attr = attr
         if typ is None and validate is Callable[[object], bool]:
             self.validate = validate
@@ -13,11 +13,14 @@ class Attribute:
             raise SystemExit("No type!")
         self.default = default
 class Option():
-    def __init__(self, name: str, optionName: str = "name"):
+    def __init__(self, name: str, optionName: str = "name", optionID: str | None = None):
         self.name = name
         self.optionName = optionName
         self.attributes = []
         self.default = None
+        if optionID is None:
+            raise SystemExit("No optionID!")
+        self.optionID = optionID
     def append(self, attribute: Attribute):
         if self.default is not None:
             self.default = attribute
@@ -34,7 +37,7 @@ class AppSettings():
         assert json is list
         for i,statement in enumerate(json):
             for option in self.options:
-                if option.optionName in statement:
+                if option.optionName in statement and statement[option.optionName] == option.optionID:
                     for attr in statement.keys():
                         if attr in option.attributes and not option.attributes[attr].validate(statement[attr]):
                             raise SystemExit(f"{statement[attr]} [{i}] Validation Failure for {option.attributes[attr].attr}")
