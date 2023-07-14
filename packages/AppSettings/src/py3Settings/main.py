@@ -75,20 +75,30 @@ class AppSettings():
         self.options = options
         self.dict = dict()
         self.defaults = dict()
-    def loadFile(self, type: str, filename = "settings.json", path = os.getcwd() ):
+    @staticmethod
+    def _loadFile( type: str, filename:str, path = os.getcwd()):
         for x in formats:
             if x.format == type:
+                if(len(filename) == 0):
+                    filename = f"settings{x.format}"
                 return x.load(filename, path)
         return False
-    def saveFile(self, type: str, data: dict, filename = "settings.json", path = os.getcwd()):
+    @staticmethod
+    def _saveFile(type: str, data: list, filename:str, path = os.getcwd()):
         for x in formats:
             if x.format == type:
+                if(len(filename) == 0):
+                    filename = f"settings{x.format}"
                 return x.save(data, filename, path)
         return False
-    def load(self, filename = "settings.json", path = os.getcwd()):
-        json = FileHandlers.loadJson(filename, path)
-        assert isinstance(json, list)
-        for i,statement in enumerate(json):
+    def loadFile(self, *args,**kwargs):
+        data = AppSettings._loadFile(*args,**kwargs)
+        return self.load(data)
+    def saveFile(self, *args,**kwargs):
+        return AppSettings._saveFile(data = self.dict, *args,**kwargs)
+    def load(self, data: list):
+        assert isinstance(data, list)
+        for i,statement in enumerate(data):
             for option in self.options:
                 if option.optionName in statement and statement[option.optionName] == option.optionID:
                     for attr in statement.keys():
