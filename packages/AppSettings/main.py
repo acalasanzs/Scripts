@@ -1,17 +1,21 @@
 import json, os
-from typing import Callable, List
+from typing import Any, Callable, List
 # from packages.AppSettings.utils import staticinstance
 
 class Attribute:
-    def __init__ (self, attr: str, typ : type | None, validate:  Callable[[object], bool] | None, default: bool = False):
+    def __init__ (self, attr: str, typ : Any | None = None, validate:  Callable[[object], bool] | None = None, default: bool = False):
         self.attr = attr
         if typ is None and validate is Callable[[object], bool]:
             self.validate = validate
-        elif validate is None and typ is type:
-            self.validate = lambda a: a is typ
+        elif validate is None and typ is not None:
+            self.typ = typ
+            self.validate = lambda a: isinstance(a, typ)
         else:
             raise SystemExit("No type!")
         self.default = default
+def printObjProps(theObject):
+    for property, value in vars(theObject).items():
+        print(property, ":", value)
 class Option():
     def __init__(self, name: str, optionName: str = "name", optionID: str | None = None):
         self.name = name
@@ -22,11 +26,16 @@ class Option():
             raise SystemExit("No optionID!")
         self.optionID = optionID
     def append(self, attribute: Attribute):
-        if self.default is not None:
+        if self.default is None:
             self.default = attribute
-        if self.default is None and attribute.default:
+        if attribute.default:
             self.default = attribute
         self.attributes.append(attribute)
+def getWithAttr(list: list, attr: str, name: str):
+    for x in list:
+        if getattr(x, name) == attr:
+            return x
+    return False
 class AppSettings():
     def __init__(self, options: List[Option]):
         self.options = options
@@ -34,13 +43,13 @@ class AppSettings():
         self.defaults = dict()
     def load(self, filename = "settings.json", path = os.getcwd()):
         json = AppSettings.loadJson(filename, path)
-        assert json is list
+        assert isinstance(json, list)
         for i,statement in enumerate(json):
             for option in self.options:
                 if option.optionName in statement and statement[option.optionName] == option.optionID:
                     for attr in statement.keys():
-                        if attr in option.attributes and not option.attributes[attr].validate(statement[attr]):
-                            raise SystemExit(f"{statement[attr]} [{i}] Validation Failure for {option.attributes[attr].attr}")
+                        if attr in [x.attr for x in option.attributes] and not getWithAttr(option.attributes, attr, "attr").validate(statement[attr]):
+                            raise SystemExit(f"Value ({statement[attr]}) [{i}] Validation Failure for {getWithAttr(option.attributes, attr, 'attr').attr} of {option.name}")
                     self.dict[option.name] = statement
                     self.defaults[option.name] = statement[option.default.attr]
     def getSetting(self, name: str, attr: str | None):
