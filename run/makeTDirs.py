@@ -2,6 +2,7 @@ import os
 import warnings
 from sys import argv
 from utils import get_immediate_subdirectories, sure
+from py3Settings import AppSettings, Option, Attribute
 workdir = False
 homedir = workdir
 def main():
