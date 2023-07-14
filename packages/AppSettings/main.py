@@ -1,5 +1,5 @@
 import json, os
-from typing import Any, Callable, List
+from typing import Callable, List
 # from packages.AppSettings.utils import staticinstance
 
 class Attribute:
@@ -11,6 +11,7 @@ class Attribute:
             self.validate = lambda a: a is typ
         else:
             raise SystemExit("No type!")
+        self.default = default
 class Option():
     def __init__(self, name: str, optionName: str = "name"):
         self.name = name
@@ -27,6 +28,7 @@ class AppSettings():
     def __init__(self, options: List[Option]):
         self.options = options
         self.dict = dict()
+        self.defaults = dict()
     def load(self, filename = "settings.json", path = os.getcwd()):
         json = AppSettings.loadJson(filename, path)
         assert json is list
@@ -37,8 +39,15 @@ class AppSettings():
                         if attr in option.attributes and not option.attributes[attr].validate(statement[attr]):
                             raise SystemExit(f"{statement[attr]} [{i}] Validation Failure for {option.attributes[attr].attr}")
                     self.dict[option.name] = statement
+                    self.defaults[option.name] = statement[option.default.attr]
     def getSetting(self, name: str, attr: str | None):
-        return self.dict[attr]
+        if attr is None:
+            return self.defaults[name]
+        return self.dict[name][attr]
+    def getSettings(self):
+        return self.dict
+    def getDefaultSettings(self):
+        return self.defaults
     @staticmethod
     def loadJson(filename = "settings.json", path = os.getcwd()):
         return json.load(open(os.path.join(path,filename)))
