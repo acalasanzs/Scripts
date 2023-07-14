@@ -1,7 +1,6 @@
 import os
 from typing import Any, Callable, List
 import file
-from operator import itemgetter
 # from packages.AppSettings.utils import staticinstance
 import re
 class Attribute:
@@ -42,7 +41,7 @@ def getWithAttr(list: list, attr: str, name: str):
     return False
 def handle(format, dict:dict):
     ins = Handler(format)
-    itemgetter(dict)(ins.init)
+    ins.init(**dict)
     return ins
 class Handler:
     invalid = r'[<>:"/\|?* ]'
@@ -53,16 +52,16 @@ class Handler:
         self.save = Handler.safeCheck(save)
     @staticmethod
     def safeCheck(fun):
-        def wrapper(filename:str, *args, **kwargs):
-            assert Handler.fileStr(filename)
-            fun(filename, *args, **kwargs)
+        def wrapper(*args, **kwargs):
+            assert Handler.fileStr(kwargs.get('filename') or args[0])
+            return fun(*args, **kwargs)
         return wrapper
     @classmethod
     def fileStr(cls, file: str) -> bool:
         file = file.split(".")
         if(len(file) != 2):
             return False
-        filename = file[0].decode('utf-8','ignore').encode("utf-8")
+        filename = file[0]
         original = file[0]
         if re.search(cls.invalid, filename):
             return False
@@ -76,7 +75,8 @@ class AppSettings():
         self.dict = dict()
         self.defaults = dict()
     @staticmethod
-    def _loadFile( type: str, filename:str, path = os.getcwd()):
+    def _loadFile(filename:str, path = os.getcwd()):
+        type = "."+filename.split(".")[1]
         for x in formats:
             if x.format == type:
                 if(len(filename) == 0):
@@ -84,24 +84,43 @@ class AppSettings():
                 return x.load(filename, path)
         return False
     @staticmethod
-    def _saveFile(type: str, data: list, filename:str, path = os.getcwd()):
+    def _saveFile(data: list, filename:str, path = os.getcwd()):
+        type = "."+filename.split(".")[1]
         for x in formats:
             if x.format == type:
                 if(len(filename) == 0):
                     filename = f"settings{x.format}"
-                return x.save(data, filename, path)
+                return x.save(data, filename = filename, path = path)
         return False
     def loadFile(self, *args,**kwargs):
         data = AppSettings._loadFile(*args,**kwargs)
+        if data is False:
+            raise SystemExit("Format not supported")
         return self.load(data)
     def saveFile(self, *args,**kwargs):
-        return AppSettings._saveFile(data = self.dict, *args,**kwargs)
+        return AppSettings._saveFile(AppSettings.preProcess(self.dict), *args,**kwargs)
+    @staticmethod
+    def preProcess(data: dict):
+        return [x for x in data.values()]
+    def validateAll(self):
+        for key, value in self.dict.items():
+            for option in self.options:
+                if option.optionName in value and value[option.optionName] == option.optionID:
+                    for attr in [y for y in list(value.keys()) if y != option.optionName]:
+                        attr_get = getWithAttr(option.attributes, attr, 'attr')
+                        val = attr_get.validate(value[attr])
+                        if attr in [x.attr for x in option.attributes] and not val:
+                            raise SystemExit(f"Value ({value[attr]}) [{i}] Validation Failure for {attr_get.attr} of {option.name}")
+                        if callable(val):
+                            value[attr] = val()
+                    self.dict[option.name] = value
+                    self.defaults[option.name] = value[option.default.attr]
     def load(self, data: list):
         assert isinstance(data, list)
         for i,statement in enumerate(data):
             for option in self.options:
                 if option.optionName in statement and statement[option.optionName] == option.optionID:
-                    for attr in statement.keys():
+                    for attr in [y for y in list(statement.keys()) if y != option.optionName]:
                         attr_get = getWithAttr(option.attributes, attr, 'attr')
                         val = attr_get.validate(statement[attr])
                         if attr in [x.attr for x in option.attributes] and not val:
