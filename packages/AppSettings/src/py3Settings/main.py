@@ -103,6 +103,7 @@ class AppSettings():
     def preProcess(data: dict):
         return [x for x in data.values()]
     def validateAll(self):
+        i = 0
         for key, value in self.dict.items():
             for option in self.options:
                 if option.optionName in value and value[option.optionName] == option.optionID:
@@ -115,6 +116,7 @@ class AppSettings():
                             value[attr] = val()
                     self.dict[option.name] = value
                     self.defaults[option.name] = value[option.default.attr]
+            i += 1
     def load(self, data: list):
         assert isinstance(data, list)
         for i,statement in enumerate(data):
