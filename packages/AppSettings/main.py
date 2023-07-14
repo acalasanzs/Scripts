@@ -60,6 +60,12 @@ class AppSettings():
         return self.dict
     def getDefaultSettings(self):
         return self.defaults
+    def __str__(self):
+        text = ""
+        for property, value in vars(self).items():
+            text += " ".join([str(x) for x in [property, ":", value]])
+            text += "\n"
+        return text
     @staticmethod
     def loadJson(filename = "settings.json", path = os.getcwd()):
         return json.load(open(os.path.join(path,filename)))
