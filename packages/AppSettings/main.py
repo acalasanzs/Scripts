@@ -2,9 +2,9 @@ import json, os
 from packages.AppSettings.utils import staticinstance
 
 class Attribute():
-        def __init__(self, attr, validate):
-            self.attr = attr
-            self.validate = validate
+    def __init__(self, attr, validate):
+        self.attr = attr
+        self.validate = validate
 class Option():
     def __init__(self, name: str):
         self.name = name
