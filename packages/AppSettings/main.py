@@ -3,7 +3,7 @@ from typing import Any, Callable, List
 # from packages.AppSettings.utils import staticinstance
 
 class Attribute:
-    def __init__ (self, attr, typ : type | None, validate:  Callable[[object], bool] | None]):
+    def __init__ (self, attr, typ : type | None, validate:  Callable[[object], bool] | None):
         self.attr = attr
         if typ is None and validate is Callable[[object], bool]:
             self.validate = validate
